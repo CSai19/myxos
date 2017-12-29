@@ -1,0 +1,75 @@
+alias physicalSP S0;
+physicalSP=[PTBR+(2*SP/512)]*512+(SP%512);
+alias sysCallNo S1;
+sysCallNo=[physicalSP-1];
+if(sysCallNo==6) then
+alias newLSEEK S2;
+newLSEEK=[physicalSP-3];
+alias fileDesc S3;
+fileDesc=[physicalSP-4];
+if(fileDesc<0||fileDesc>7) then
+[physicalSP-2]=-1;
+ireturn;
+endif;
+alias processID S4;
+processID=(PTBR-1024)/8;
+alias ppoft S5;
+ppoft=READY_LIST+32*processID+15;
+if([ppoft+2*fileDesc]==-1) then
+[physicalSP-2]=-1;
+ireturn;
+endif;
+alias swoftIndex S6;
+swoftIndex=[ppoft+2*fileDesc];
+alias fatIndex S7;
+fatIndex=[FILE_TABLE+2*swoftIndex];
+alias fileSize S8;
+fileSize=[FAT+8*fatIndex+1];
+if(newLSEEK<0||newLSEEK>fileSize) then
+[physicalSP-2]=-1;
+ireturn;
+endif;
+[ppoft+2*fileDesc+1]=newLSEEK;
+[physicalSP-2]=0;
+ireturn;
+endif;
+
+
+if(sysCallNo==7) then
+alias fileDesc S2;
+fileDesc=[physicalSP-4];
+if(fileDesc<0||fileDesc>7) then
+[physicalSP-2]=-1;
+ireturn;
+endif;
+alias processID S3;
+processID=(PTBR-1024)/8;
+alias ppoft S4;
+ppoft=READY_LIST+32*processID+15;
+if([ppoft+2*fileDesc]==-1) then
+[physicalSP-2]=-1;
+ireturn;
+endif;
+alias swoftIndex S5;
+swoftIndex=[ppoft+2*fileDesc];
+alias LSEEK S6;
+LSEEK=[ppoft+2*fileDesc+1];
+alias fatIndex S7;
+fatIndex=[FILE_TABLE+2*swoftIndex];
+alias bbNo S8;
+bbNo=[FAT+8*fatIndex+2];
+alias fileSize S9;
+fileSize=[FAT+8*fatIndex+1];
+if(LSEEK==fileSize) then
+[physicalSP-2]=-1;
+ireturn;
+endif;
+load(1,bbNo);
+alias dbNo S10;
+dbNo=[SCRATCHPAD+LSEEK/512];
+load(1,dbNo);
+[physicalSP-3]=[SCRATCHPAD+LSEEK%512];
+[ppoft+2*fileDesc+1]=[ppoft+2*fileDesc+1]+1;
+[physicalSP-2]=0;
+ireturn;
+endif;

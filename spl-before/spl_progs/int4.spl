@@ -1,0 +1,61 @@
+alias physicalSP S0;
+physicalSP=[PTBR+(2*SP/512)]*512+(SP%512);
+alias sysCallNo S1;
+sysCallNo=[physicalSP-1];
+if(sysCallNo==5) then
+alias wordToWrite S2;
+wordToWrite=[physicalSP-3];
+alias fileDesc S3;
+fileDesc=[physicalSP-4];
+if(fileDesc<0||fileDesc>7) then
+[physicalSP-2]=-1;
+ireturn;
+endif;
+alias processID S4;
+processID=(PTBR-1024)/8;
+alias ppoft S5;
+ppoft=READY_LIST+32*processID+15;
+if([ppoft+2*fileDesc]==-1) then
+[physicalSP-2]=-1;
+ireturn;
+endif;
+alias swoftIndex S6;
+swoftIndex=[ppoft+2*fileDesc];
+alias lseekPos S7;
+lseekPos=[ppoft+2*fileDesc+1];
+alias fatIndex S8;
+fatIndex=[FILE_TABLE+2*swoftIndex];
+alias bbNo S9;
+bbNo=[FAT+8*fatIndex+2];
+load(1,bbNo);
+alias dbNo S10;
+	if([SCRATCHPAD+lseekPos/512]==-1) then
+	alias i S11;
+	i=24;
+	while(i<=447) do
+	if([DISK_LIST+i]==0) then
+	break;
+	endif;
+	i=i+1;
+	endwhile;
+	if(i==448) then
+	[physicalSP-2]=-1;
+	ireturn;
+	endif;
+	dbNo=i;
+	[DISK_LIST+dbNo]=1;
+	[SCRATCHPAD+lseekPos/512]=dbNo;
+	store(1,bbNo);
+	[FAT+8*fatIndex+1]=[FAT+8*fatIndex+1]+512;
+	store(5,19);
+	store(6,20);
+	endif;
+dbNo=[SCRATCHPAD+lseekPos/512];
+load(1,dbNo);
+[SCRATCHPAD+lseekPos%512]=wordToWrite;
+store(1,dbNo);
+[ppoft+2*fileDesc+1]=[ppoft+2*fileDesc+1]+1;
+[physicalSP-2]=0;
+ireturn;
+endif;
+

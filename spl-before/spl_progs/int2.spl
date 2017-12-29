@@ -1,0 +1,103 @@
+alias physicalSP S0;
+physicalSP=[PTBR+(2*SP/512)]*512+(SP%512);
+alias sysCallNo S1;
+sysCallNo=[physicalSP-1];
+
+
+
+if(sysCallNo==2) then
+alias fileName S2;
+fileName=[physicalSP-3];
+alias i S3;
+i=0;
+while(i<=63) do
+if([FAT+8*i]==fileName) then
+break;
+endif;
+i=i+1;
+endwhile;
+if(i==64) then
+[physicalSP-2]=-1;
+ireturn;
+endif;
+alias fatIndex S4;
+fatIndex=i;
+i=0;
+while(i<=127) do
+if([FILE_TABLE+i]==fatIndex) then
+break;
+endif;
+i=i+2;
+endwhile;
+alias swoftIndex S5;
+	if(i==128) then
+	alias j S15;
+	j=0;
+	while(j<=127) do
+	if([FILE_TABLE+j]==-1) then
+	break;
+	endif;
+	j=j+2;
+	endwhile;
+		if(j==128) then
+		[physicalSP-2]=-1;
+		ireturn;
+		else
+		swoftIndex=j/2;
+		endif;
+	else 
+	swoftIndex=i/2;
+	endif;
+alias processId S6;
+processId=(PTBR-1024)/8;
+alias ppoftIndex S7;
+alias ppoft S8;
+ppoft=READY_LIST+32*processId+15;
+i=0;
+while(i<=15) do
+if([ppoft+i]==-1) then
+break;
+endif;
+i=i+2;
+endwhile;
+if(i==16) then
+[physicalSP-2]=-1;
+ireturn;
+endif;
+ppoftIndex=i/2;
+[ppoft+ppoftIndex*2]=swoftIndex;
+[ppoft+ppoftIndex*2+1]=0;
+[FILE_TABLE+2*swoftIndex]=fatIndex;
+[FILE_TABLE+2*swoftIndex+1]=[FILE_TABLE+2*swoftIndex+1]+1;
+[physicalSP-2]=ppoftIndex;
+ireturn;
+endif;
+
+
+
+if(sysCallNo==3) then
+alias fileDescriptor S2;
+fileDescriptor=[physicalSP-3];
+if(fileDescriptor<0||fileDescriptor>7) then
+[physicalSP-2]=-1;
+ireturn;
+endif;
+alias processID S3;
+processID=(PTBR-1024)/8;
+alias ppoft S4;
+ppoft=READY_LIST+32*processID+15;
+if([ppoft+2*fileDescriptor]==-1) then
+[physicalSP-2]=-1;
+ireturn;
+endif;
+alias swoftIndex S5;
+swoftIndex=[ppoft+2*fileDescriptor];
+[FILE_TABLE+2*swoftIndex+1]=[FILE_TABLE+2*swoftIndex+1]-1;
+if([FILE_TABLE+2*swoftIndex+1]==0) then
+[FILE_TABLE+2*swoftIndex]=-1;
+endif;
+[ppoft+2*fileDescriptor]=-1;
+[ppoft+2*fileDescriptor+1]=-1;
+[physicalSP-2]=0;
+ireturn;
+endif;

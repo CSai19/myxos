@@ -1,0 +1,173 @@
+alias physicalSP S0;
+physicalSP=[PTBR+(2*SP/512)]*512+(SP%512);
+
+alias sysCallNo S1;
+sysCallNo=[physicalSP-1];
+
+if(sysCallNo==9) then
+
+alias fileName S2;
+fileName=[physicalSP-3];
+
+alias i S3;
+
+i=0;
+while(i<=63) do
+if([FAT+8*i]==fileName) then
+break;
+endif;
+i=i+1;
+endwhile;
+
+if(i==64) then
+[physicalSP-2]=-1;
+ireturn;
+endif;
+
+
+alias PID S8;
+PID=(PTBR-1024)/8;
+
+alias j S9;
+j=25*512+PID*4;
+
+i=0;
+
+while(i<=3) do
+if([j+i]==-1) then
+break;
+endif;
+i=i+1;
+endwhile;
+
+if(i==4) then
+[physicalSP-2]=-1;
+ireturn;
+endif;
+
+[j+i]=fileName;
+
+[physicalSP-2]=0;
+ireturn;
+
+
+alias ii S15;
+
+[S13+S14]=-1;
+
+ii=0;
+while(ii<=63) do
+if([FAT+8*ii]==S2) then
+break;
+endif;
+ii=ii+1;
+endwhile;
+
+if(ii==64) then
+inline "JMP 11914";
+endif;
+
+alias z S10;
+
+z=0;
+while(z<=31) do
+if([READY_LIST+32*z+1]==0) then
+break;
+endif;
+z=z+1;
+endwhile;
+
+if(z==32) then
+inline "JMP 11914";
+endif;
+
+[READY_LIST+32*z]=z;
+
+alias PPTBR S11;
+alias y S12;
+
+PPTBR=1024+8*z;
+
+
+y=26;
+while(y<=63) do
+if([MEM_LIST+y]==0) then
+break;
+endif;
+y=y+1;
+endwhile;
+
+if(y==64) then
+inline "JMP 11914";
+endif;
+
+[PPTBR+6]=y;
+[PPTBR+7]="01";
+
+load(1,[FAT+8*ii+2]);
+
+
+ii=0;
+while(ii<=2) do
+if([SCRATCHPAD+ii]!=-1) then
+[PPTBR+2*ii]=[SCRATCHPAD+ii];
+[PPTBR+2*ii+1]="00";
+else
+[PPTBR+2*ii]=-1;
+[PPTBR+2*ii+1]="00";
+endif;
+ii=ii+1;
+endwhile;
+
+y=1536+32*z;
+[y+1]=1;
+[y+2]=1536;
+[y+3]=1536;
+[y+4]=0;
+[y+5]=PPTBR;
+[y+6]=4;
+[y+15]=-1;
+[y+16]=-1;
+[y+17]=-1;
+[y+18]=-1;
+[y+19]=-1;
+[y+20]=-1;
+[y+21]=-1;
+[y+22]=-1;
+[y+23]=-1;
+[y+24]=-1;
+[y+25]=-1;
+[y+26]=-1;
+[y+27]=-1;
+[y+28]=-1;
+[y+29]=-1;
+[y+30]=-1;
+
+breakpoint;
+
+inline "JMP 11914";
+
+endif;
+
+if(sysCallNo==11) then
+alias pid S2;
+pid=(PTBR-1024)/8;
+
+[physicalSP-2]=pid;
+
+ireturn;
+
+endif;
+
+if(sysCallNo==12) then
+alias pid S2;
+pid=(PTBR-1024)/8;
+
+alias parentPID S3;
+parentPID=[READY_LIST+32*pid+31];
+
+[physicalSP-2]=parentPID;
+
+ireturn;
+
+endif;
